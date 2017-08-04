@@ -1,0 +1,18 @@
+{
+  "name": "passwords",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node app"
+  },
+  "description": "Passwords",
+  "author": {
+    "name": "Matt"
+  },
+  "dependencies": {
+    "debug": "^2.6.8",
+    "express": "^4.15.3",
+    "morgan": "^1.8.2",
+    "openpgp": "^2.5.8"
+  }
+}
