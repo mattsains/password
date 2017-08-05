@@ -1,37 +1,62 @@
 ﻿'use strict';
-let debug = require('debug');
-let express = require('express');
-let logger = require('morgan');
-let openpgp = require('openpgp');
-let storage = require('./storage.js');
+const debug = require('debug');
+const express = require('express');
+const logger = require('morgan');
 
-let app = express();
+const storage = require('./storage.js');
+const NoSuchEntity = storage.NoSuchEntity;
+
+const crypto = require('./crypto.js');
+const DecryptionError = crypto.DecryptionError;
+
+const app = express();
 
 app.use(logger('dev'));
 app.set('port', process.env.PORT || 3000);
 
 storage.setBasePath('./passwords/');
 
-let server = app.listen(app.get('port'), () => {
+const server = app.listen(app.get('port'), () => {
     debug('Express server listening on port ' + server.address().port);
 });
 
-app.put('/encrypt', (req, res) => {
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).end();
+    next();
+});
+
+app.put('/secret', (req, res) => {
     const name = req.get('name');
     const encryptionKey = req.get('encryption_key');
-    const password = req.get('password');
+    const secret = req.get('secret');
 
-    return openpgp.encrypt({ data: password, passwords: [encryptionKey], detached: true, armour: true })
-        .then(cipherDetails => storage.save(name, cipherDetails.data))
+    return crypto.encrypt(encryptionKey, secret)
+        .then(cipherText => storage.save(name, cipherText))
         .then(res.end());
 });
 
-app.get('/decrypt', (req, res) => {
+app.get('/secret', (req, res) => {
     const name = req.get('name');
     const encryptionKey = req.get('encryption_key');
 
     return storage.load(name)
-        .then(data => openpgp.decrypt({ message: openpgp.message.readArmored(data.toString()), password: encryptionKey }))
-        .then(decryptionResult => res.send(decryptionResult.data))
-        .catch(err => res.status(400).send("Password incorrect"));
+        .then(data => crypto.decrypt(encryptionKey, data.toString()))
+        .then(decryptionResult => res.send(decryptionResult))
+        .catch(err => {
+            if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
+            else if (err instanceof NoSuchEntity) res.status(404).send('No such secret');
+            else throw err;
+        });
+});
+
+app.delete('/secret', (req, res) => {
+    const name = req.get('name');
+
+    return storage.delete(name)
+        .then(() => res.end())
+        .catch(err => {
+            if (err instanceof NoSuchEntity) res.status(404).send("No such secret");
+            else throw err;
+        });
 });
