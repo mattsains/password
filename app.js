@@ -2,6 +2,8 @@
 const debug = require('debug');
 const express = require('express');
 const logger = require('morgan');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
 const secretStorage = require('./secret-storage.js');
 const NoSuchEntity = secretStorage.NoSuchEntity;
@@ -10,7 +12,9 @@ const DecryptionError = secretStorage.DecryptionError;
 const app = express();
 
 app.use(logger('dev'));
-app.set('port', process.env.PORT || 3000);
+app.use(bodyParser.text());
+app.use(cors());
+app.set('port', process.env.PORT || 1234);
 
 
 const server = app.listen(app.get('port'), () => {
@@ -24,17 +28,11 @@ app.use((err, req, res, next) => {
 });
 
 app.put('/secret', (req, res) => {
-    const name = req.get('name');
-    const encryptionKey = req.get('encryption_key');
-    const secret = req.get('secret');
-    secretStorage.put(name, secret, encryptionKey).then(res.end());
+    secretStorage.put(req.query.name, req.body, req.query.encryptionKey).then(res.end());
 });
 
 app.get('/secret', (req, res) => {
-    const name = req.get('name');
-    const encryptionKey = req.get('encryption_key');
-
-    return secretStorage.get(name, encryptionKey)
+    return secretStorage.get(req.query.name, req.query.encryptionKey)
         .then(secret => res.send(secret))
         .catch(err => {
             if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
@@ -44,9 +42,7 @@ app.get('/secret', (req, res) => {
 });
 
 app.delete('/secret', (req, res) => {
-    const name = req.get('name');
-
-    secretStorage.delete(name)
+    secretStorage.delete(req.query.name)
         .then(() => res.end())
         .catch(err => {
             if (err instanceof NoSuchEntity) res.status(404).send("No such secret");
@@ -55,10 +51,8 @@ app.delete('/secret', (req, res) => {
 });
 
 app.get('/secrets', (req, res) => {
-    const encryptionKey = req.get('encryption_key');
-
-    secretStorage.list(encryptionKey)
-        .then(result => res.send(result))
+    secretStorage.list(req.query.encryptionKey)
+        .then(result => res.json(result))
         .catch(err => {
             if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
             else throw err;

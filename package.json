@@ -11,6 +11,8 @@
     "name": "Matt"
   },
   "dependencies": {
+    "body-parser": "^1.17.2",
+    "cors": "^2.8.4",
     "debug": "^2.6.8",
     "express": "^4.15.3",
     "mkdirp": "^0.5.1",
