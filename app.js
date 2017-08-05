@@ -3,7 +3,7 @@ const debug = require('debug');
 const express = require('express');
 const logger = require('morgan');
 
-const secretStorage = require('./secretStorage.js');
+const secretStorage = require('./secret-storage.js');
 const NoSuchEntity = secretStorage.NoSuchEntity;
 const DecryptionError = secretStorage.DecryptionError;
 

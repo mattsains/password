@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node app"
+    "start": "node app",
+    "test": "jasmine"
   },
   "description": "Passwords",
   "author": {
@@ -18,5 +19,9 @@
     "openpgp": "^2.5.8",
     "uuid": "^3.1.0",
     "uuid4": "^1.0.0"
+  },
+  "devDependencies": {
+    "jasmine": "^2.7.0",
+    "jasmine-promise-tools": "^1.1.0"
   }
 }
