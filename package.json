@@ -12,7 +12,11 @@
   "dependencies": {
     "debug": "^2.6.8",
     "express": "^4.15.3",
+    "mkdirp": "^0.5.1",
     "morgan": "^1.8.2",
-    "openpgp": "^2.5.8"
+    "nosql": "^5.0.3",
+    "openpgp": "^2.5.8",
+    "uuid": "^3.1.0",
+    "uuid4": "^1.0.0"
   }
 }

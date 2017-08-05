@@ -3,18 +3,14 @@ const debug = require('debug');
 const express = require('express');
 const logger = require('morgan');
 
-const storage = require('./storage.js');
-const NoSuchEntity = storage.NoSuchEntity;
-
-const crypto = require('./crypto.js');
-const DecryptionError = crypto.DecryptionError;
+const secretStorage = require('./secretStorage.js');
+const NoSuchEntity = secretStorage.NoSuchEntity;
 
 const app = express();
 
 app.use(logger('dev'));
 app.set('port', process.env.PORT || 3000);
 
-storage.setBasePath('./passwords/');
 
 const server = app.listen(app.get('port'), () => {
     debug('Express server listening on port ' + server.address().port);
@@ -30,19 +26,15 @@ app.put('/secret', (req, res) => {
     const name = req.get('name');
     const encryptionKey = req.get('encryption_key');
     const secret = req.get('secret');
-
-    return crypto.encrypt(encryptionKey, secret)
-        .then(cipherText => storage.save(name, cipherText))
-        .then(res.end());
+    secretStorage.put(name, secret, encryptionKey).then(res.end());
 });
 
 app.get('/secret', (req, res) => {
     const name = req.get('name');
     const encryptionKey = req.get('encryption_key');
 
-    return storage.load(name)
-        .then(data => crypto.decrypt(encryptionKey, data.toString()))
-        .then(decryptionResult => res.send(decryptionResult))
+    return secretStorage.get(name, encryptionKey)
+        .then(secret => res.send(secret))
         .catch(err => {
             if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
             else if (err instanceof NoSuchEntity) res.status(404).send('No such secret');
@@ -52,8 +44,9 @@ app.get('/secret', (req, res) => {
 
 app.delete('/secret', (req, res) => {
     const name = req.get('name');
+    const encryptionKey = req.get('encryption_key');
 
-    return storage.delete(name)
+    secretStorage.delete(name, encryptionKey)
         .then(() => res.end())
         .catch(err => {
             if (err instanceof NoSuchEntity) res.status(404).send("No such secret");
