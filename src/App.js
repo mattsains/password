@@ -25,7 +25,10 @@ export default class App extends Component {
 
     componentDidMount() {
         const client = new PasswordClient();
-        client.listPasswords('test').then(passwords => this.setState({passwords}));
+        client.listPasswords('test').then(passwords => { 
+            this.setState({passwords})})
+            .catch(err => {
+                console.error(err);});
     }
 
     render() {
