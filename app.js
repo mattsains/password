@@ -5,6 +5,7 @@ const logger = require('morgan');
 
 const secretStorage = require('./secretStorage.js');
 const NoSuchEntity = secretStorage.NoSuchEntity;
+const DecryptionError = secretStorage.DecryptionError;
 
 const app = express();
 
@@ -44,12 +45,22 @@ app.get('/secret', (req, res) => {
 
 app.delete('/secret', (req, res) => {
     const name = req.get('name');
-    const encryptionKey = req.get('encryption_key');
 
-    secretStorage.delete(name, encryptionKey)
+    secretStorage.delete(name)
         .then(() => res.end())
         .catch(err => {
             if (err instanceof NoSuchEntity) res.status(404).send("No such secret");
+            else throw err;
+        });
+});
+
+app.get('/secrets', (req, res) => {
+    const encryptionKey = req.get('encryption_key');
+
+    secretStorage.list(encryptionKey)
+        .then(result => res.send(result))
+        .catch(err => {
+            if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
             else throw err;
         });
 });

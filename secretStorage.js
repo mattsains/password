@@ -6,7 +6,7 @@ const NoSuchEntity = Storage.NoSuchEntity;
 exports.NoSuchEntity = NoSuchEntity;
 
 const crypto = require('./crypto.js');
-const DecryptionError = crypto.DecryptionError;
+exports.DecryptionError = crypto.DecryptionError;
 
 const secretIndex = nosql.load('./secretIndex.db.json');
 const secretStorage = new Storage('./passwords/');
@@ -48,8 +48,21 @@ exports.delete = (name) => {
     .then(location => secretStorage.delete(location))
 };
 
+exports.list = (encryptionKey) => {
+    return new Promise((resolve, reject) => {
+        secretIndex.find().make(filter => {
+            filter.callback((err, result) => {
+                if (err) reject(err);
+                resolve(result);
+            });
+        });
+    }).then(records => {
+        return Promise.all(records.map(record => crypto.decrypt(encryptionKey, record.encryptedName)));
+    });
+}
+
 RecordMatchesName = (name, record) => {
-    return crypto.hash(name, record.salt) === record.hashedName
+    return name != undefined && crypto.hash(name, record.salt) === record.hashedName
 };
 
 getIndexRecord = name => {

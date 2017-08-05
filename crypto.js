@@ -16,6 +16,4 @@ exports.decrypt = (key, cipherText) => {
         .catch(err => { throw new DecryptionError(err) });
 };
 
-exports.hash = (value, salt) => {
-    hashGenerator.createHash('sha256').update(value + salt).digest('base64');
-}
+exports.hash = (value, salt) => hashGenerator.createHash('sha256').update(value + salt).digest('base64');
