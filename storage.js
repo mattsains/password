@@ -46,15 +46,4 @@ module.exports = class Storage {
             });
         });
     }
-
-    // Recursively creates a directory
-    mkdir(key) {
-        return new Promise((resolve, reject) => {
-            const fullPath = path.join(this.basepath, key);
-            mkdirp(fullpath, err => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
-    }
 };
