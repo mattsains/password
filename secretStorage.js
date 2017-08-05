@@ -8,17 +8,22 @@ exports.NoSuchEntity = NoSuchEntity;
 const crypto = require('./crypto.js');
 const DecryptionError = crypto.DecryptionError;
 
-const db = nosql.load('./index.db.json');
+const secretIndex = nosql.load('./secretIndex.db.json');
 const secretStorage = new Storage('./passwords/');
 
 exports.put = (name, secret, encryptionKey) => {
-    const hashedName = crypto.hash(name, encryptionKey);
-    return getIndexRecord(hashedName).then(indexRecord => {
+    return getIndexRecord(name).then(indexRecord => {
         if (indexRecord == undefined) {
-            indexRecord = {name: hashedName, location: indexRecord};
-            db.insert(indexRecord);
+            const salt = uuid();
+            const hashedName = crypto.hash(name, salt);
+            return crypto.encrypt(encryptionKey, name)
+                .then(encryptedName => ({hashedName, salt, encryptedName, location: uuid()}))
+                .then(record => {
+                    secretIndex.insert(record);
+                    return record.location;
+                });
         }
-        return indexRecord.location;
+        else return indexRecord.location;
     })
     .then(location => {
         return crypto.encrypt(encryptionKey, secret)
@@ -27,8 +32,7 @@ exports.put = (name, secret, encryptionKey) => {
 };
 
 exports.get = (name, encryptionKey) => {
-    const hashedName = crypto.hash(name, encryptionKey);
-    return getIndexRecord(hashedName).then(indexRecord => {
+    return getIndexRecord(name).then(indexRecord => {
         if (indexRecord == undefined) throw new NoSuchEntity();
         else return indexRecord.location;
     })
@@ -36,37 +40,41 @@ exports.get = (name, encryptionKey) => {
     .then(data => crypto.decrypt(encryptionKey, data.toString()));
 };
 
-exports.delete = (name, encryptionKey) => {
-    const hashedName = crypto.hash(name, encryptionKey);
-    return getIndexRecord(hashedName).then(record => {
+exports.delete = (name) => {
+    return getIndexRecord(name).then(record => {
         if (record == undefined) throw new NoSuchEntity();
-        removeIndexRecord(hashedName);
-        return record.location;
+        return removeIndexRecord(name).then(() => record.location);
     })
     .then(location => secretStorage.delete(location))
 };
 
-getIndexRecord = key => {
+RecordMatchesName = (name, record) => {
+    return crypto.hash(name, record.salt) === record.hashedName
+};
+
+getIndexRecord = name => {
     return new Promise((resolve, reject) => {
-        db.find().make(filter => {
-            filter.where('name', key);
+        secretIndex.find().make(filter => {
             filter.callback((err, result) => {
                 if (err) reject(err);
-                else if (result.length == 0) resolve();
-                else resolve(result[0]);
+                resolve(result.find(rec => RecordMatchesName(name, rec)));
             });
         });
     });
 };
 
-removeIndexRecord = key => {
-    return new Promise((resolve, reject) => {
-        db.remove().make(filter => {
-            filter.where('name', key);
-            filter.callback((err, result) => {
-                if (err) reject(err);
-                else resolve();
+removeIndexRecord = name => {
+    return getIndexRecord(name).then(record => {
+        if (record == undefined) throw new NoSuchEntity();
+        return new Promise((resolve, reject) => {
+            secretIndex.remove().make(filter => {
+                filter.where('hashedName', record.hashedName);
+                filter.callback((err, result) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
             });
         });
     });
 };
+

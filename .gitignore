@@ -1,5 +1,5 @@
 node_modules
-index.db.nosql
+secretIndex.db.nosql
 passwords/*
 package-lock.json
 .vscode

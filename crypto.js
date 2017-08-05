@@ -17,8 +17,5 @@ exports.decrypt = (key, cipherText) => {
 };
 
 exports.hash = (value, salt) => {
-    const sha256 = val => hashGenerator.createHash('sha256').update(val).digest('base64');
-
-    if (salt == undefined) salt = uuid();
-    return sha256(salt + value);
+    hashGenerator.createHash('sha256').update(value + salt).digest('base64');
 }
