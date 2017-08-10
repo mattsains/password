@@ -1,14 +1,13 @@
 import React, { Component } from 'react';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
-import FlatButton from 'material-ui/FlatButton';
 import Add from 'material-ui/svg-icons/content/add';
 import {List, ListItem} from 'material-ui/List';
 import {Card, CardTitle, CardText} from 'material-ui/Card';
 import Divider from 'material-ui/Divider';
-import Dialog from 'material-ui/Dialog';
 import RefreshIndicator from './hacks/BetterRefreshIndicator.js';
 
 import PasswordClient from './services/password-client.js';
+import PasswordDetailDialog from './PasswordDetailDialog.js';
 
 import style from './PasswordList.css';
 
@@ -24,10 +23,9 @@ export default class PasswordList extends Component {
 
     componentDidMount() {
         const client = new PasswordClient();
-        client.listPasswords(this.props.encryptionKey).then(passwords => {
-            this.setState({passwords, loading: false})})
-            .catch(err => {
-                console.error(err);});
+        client.listPasswords(this.props.encryptionKey)
+            .then(passwords => this.setState({passwords, loading: false}))
+            .catch(err => console.error(err));
     }
 
     render() {
@@ -35,8 +33,13 @@ export default class PasswordList extends Component {
         if (this.state.loading) inside = <RefreshIndicator size={40} className='refresh' status='loading' />;
         else inside = <List>{this.renderListItems()}</List>;
 
-        let passwordDetailDialog = this.renderDetailsDialog();
-
+        const passwordDetailDialog = (
+            <PasswordDetailDialog
+                open={!!this.state.currentPassword}
+                name={this.state.currentPassword}
+                encryptionKey={this.props.encryptionKey}
+            />
+        );
         return (
             <div>
                 <FloatingActionButton className='addButton'>
@@ -69,25 +72,5 @@ export default class PasswordList extends Component {
             <Divider inset={false}/>
             </span>
         ));
-    }
-
-    renderDetailsDialog() {
-         const actions = [
-            <FlatButton
-                label="Cancel"
-                primary={true}
-                onTouchTap={this.handleDialogClose}
-            />
-        ];
-
-        return (
-            <Dialog
-                title={this.state.currentPassword}
-                modal={false}
-                actions={actions}
-                open={this.state.currentPassword}
-                onRequestClose={this.handleDialogClose}
-            />
-        );
     }
 }
