@@ -4,7 +4,6 @@ import injectTapEventPlugin from 'react-tap-event-plugin';
 import AppBar from 'material-ui/AppBar';
 import LockOutline from 'material-ui/svg-icons/action/lock-outline';
 import IconButton from 'material-ui/IconButton';
-import PasswordClient from './services/password-client.js';
 
 import './App.css';
 
@@ -16,31 +15,16 @@ import PasswordList from './PasswordList.js';
 injectTapEventPlugin();
 
 export default class App extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            passwords: []
-        };
-    }
-
-    componentDidMount() {
-        const client = new PasswordClient();
-        client.listPasswords('test').then(passwords => { 
-            this.setState({passwords})})
-            .catch(err => {
-                console.error(err);});
-    }
-
     render() {
         return (
             <MuiThemeProvider>
                 <div>
-                    <AppBar 
-                        title="Password Manager"
+                    <AppBar
+                        title='Password Manager'
                         iconElementLeft={<IconButton><LockOutline/></IconButton>}
                      />
-                    <PasswordList 
-                        passwords={this.state.passwords}
+                    <PasswordList
+                        encryptionKey='test'
                     />
                 </div>
             </MuiThemeProvider>
