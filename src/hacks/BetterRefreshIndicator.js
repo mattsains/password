@@ -6,7 +6,7 @@ export default class BetterRefreshIndicator extends Component {
         super(...params);
     }
 
-    componentWillMount() {
+    render() {
         const style = {
             transform: 'none',
             left: 0,
@@ -16,9 +16,6 @@ export default class BetterRefreshIndicator extends Component {
         this.indicator = (
             <_RefreshIndicator {...this.props} style={style} />
         );
-    }
-
-    render() {
         return this.indicator;
     }
 }
