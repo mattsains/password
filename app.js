@@ -33,7 +33,7 @@ app.put('/secret', (req, res) => {
 
 app.get('/secret', (req, res) => {
     return secretStorage.get(req.query.name, req.query.encryptionKey)
-        .then(secret => res.send(secret))
+        .then(secret => res.json(secret))
         .catch(err => {
             if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
             else if (err instanceof NoSuchEntity) res.status(404).send('No such secret');
@@ -51,10 +51,10 @@ app.delete('/secret', (req, res) => {
 });
 
 app.get('/secrets', (req, res) => {
-    secretStorage.list(req.query.encryptionKey)
+    setTimeout(() => secretStorage.list(req.query.encryptionKey)
         .then(result => res.json(result))
         .catch(err => {
             if (err instanceof DecryptionError) res.status(403).send("Decryption key incorrect");
             else throw err;
-        });
+        }), 1000);
 });
