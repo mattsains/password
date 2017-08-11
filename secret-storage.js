@@ -9,43 +9,30 @@ const crypto = require('./crypto.js');
 exports.DecryptionError = crypto.DecryptionError;
 
 const secretIndex = nosql.load('./secretIndex.db.json');
-const secretStorage = new Storage('./passwords/');
 
 exports.put = (name, secret, encryptionKey) => {
-    return getIndexRecord(name).then(indexRecord => {
-        if (indexRecord == undefined) {
-            const salt = uuid();
-            const hashedName = crypto.hash(name, salt);
-            return crypto.encrypt(encryptionKey, name)
-                .then(encryptedName => ({hashedName, salt, encryptedName, location: uuid()}))
-                .then(record => {
-                    secretIndex.insert(record);
-                    return record.location;
-                });
-        }
-        else return indexRecord.location;
-    })
-    .then(location => {
-        return crypto.encrypt(encryptionKey, secret)
-            .then(cipherText => secretStorage.save(location, cipherText));
-    });
+    // Hacky way to make sure this is a put
+    return removeIndexRecord(name)
+        .catch(err => {
+            if (!(err instanceof NoSuchEntity)) throw err;
+        })
+        .then(() => generateNewRecord(name, secret, encryptionKey))
+        .then(record => secretIndex.insert(record));
 };
 
 exports.get = (name, encryptionKey) => {
     return getIndexRecord(name).then(indexRecord => {
         if (indexRecord == undefined) throw new NoSuchEntity();
-        else return indexRecord.location;
+        else return indexRecord.secret;
     })
-    .then(location => secretStorage.load(location))
     .then(data => crypto.decrypt(encryptionKey, data.toString()));
 };
 
 exports.delete = (name) => {
     return getIndexRecord(name).then(record => {
         if (record == undefined) throw new NoSuchEntity();
-        return removeIndexRecord(name).then(() => record.location);
-    })
-    .then(location => secretStorage.delete(location))
+        return removeIndexRecord(name);
+    });
 };
 
 exports.list = (encryptionKey) => {
@@ -64,6 +51,16 @@ exports.list = (encryptionKey) => {
 RecordMatchesName = (name, record) => {
     return name != undefined && crypto.hash(name, record.salt) === record.hashedName
 };
+
+generateNewRecord = (name, secret, encryptionKey) => {
+    const salt = uuid();
+    const hashedName = crypto.hash(name, salt);
+    return crypto.encrypt(encryptionKey, name)
+        .then(encryptedName => {
+            return crypto.encrypt(encryptionKey, secret)
+                .then(encryptedSecret => ({hashedName, salt, encryptedName, secret: encryptedSecret}));
+        })
+}
 
 getIndexRecord = name => {
     return new Promise((resolve, reject) => {
