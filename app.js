@@ -12,7 +12,7 @@ const DecryptionError = secretStorage.DecryptionError;
 const app = express();
 
 app.use(logger('dev'));
-app.use(bodyParser.text());
+app.use(bodyParser.json());
 app.use(cors());
 app.set('port', process.env.PORT || 1234);
 
@@ -28,7 +28,7 @@ app.use((err, req, res, next) => {
 });
 
 app.put('/secret', (req, res) => {
-    secretStorage.put(req.query.name, req.body, req.query.encryptionKey).then(res.end());
+    secretStorage.put(req.body.name, req.body.secret, req.body.encryptionKey).then(res.status(201).end());
 });
 
 app.get('/secret', (req, res) => {
