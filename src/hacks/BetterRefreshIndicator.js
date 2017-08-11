@@ -9,13 +9,10 @@ export default class BetterRefreshIndicator extends Component {
     render() {
         const style = {
             transform: 'none',
-            left: 0,
-            top: 0,
             position: 'static'
         };
-        this.indicator = (
-            <_RefreshIndicator {...this.props} style={style} />
+        return (
+            <_RefreshIndicator {...this.props} style={style} top={0} left={0} />
         );
-        return this.indicator;
     }
 }

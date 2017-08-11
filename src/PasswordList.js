@@ -8,6 +8,7 @@ import RefreshIndicator from './hacks/BetterRefreshIndicator.js';
 
 import PasswordClient from './services/password-client.js';
 import PasswordDetailDialog from './PasswordDetailDialog.js';
+import PasswordAddDialog from './PasswordAddDialog.js'
 
 import style from './PasswordList.css';
 
@@ -17,7 +18,8 @@ export default class PasswordList extends Component {
         this.state = {
             passwords: [],
             currentPassword: undefined,
-            loading: true
+            loading: true,
+            isAddingPassword: false
         };
     }
 
@@ -40,25 +42,37 @@ export default class PasswordList extends Component {
                 encryptionKey={this.props.encryptionKey}
             />
         );
+
+        const passwordAddDialog = (
+            <PasswordAddDialog
+                encryptionKey={this.props.encryptionKey}
+                open={this.state.isAddingPassword}
+            />
+        );
+
         return (
             <div>
-                <FloatingActionButton className='addButton'>
+                <FloatingActionButton
+                    className='addButton'
+                    onTouchTap={() => this.setState({isAddingPassword: true})}
+                >
                     <Add />
                 </FloatingActionButton>
                 <Card className='passwordList'>
                     <CardTitle title='Passwords' />
                     {inside}
                     {passwordDetailDialog}
+                    {passwordAddDialog}
                 </Card>
             </div>
         );
     }
 
-    handleDialogOpen = passwordName => {
+    handlePasswordSelection = passwordName => {
         this.setState({currentPassword: passwordName});
     }
 
-    handleDialogClose = () => {
+    handlePasswordDetailDone = () => {
         this.setState({currentPassword: undefined});
     }
 
@@ -67,7 +81,7 @@ export default class PasswordList extends Component {
             <span key={item}>
             <ListItem
                 primaryText={item}
-                onTouchTap={() => this.handleDialogOpen(item)}
+                onTouchTap={() => this.handlePasswordSelection(item)}
             />
             <Divider inset={false}/>
             </span>

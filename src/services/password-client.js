@@ -1,4 +1,4 @@
-import RestClient from 'react-native-rest-client';
+import RestClient from '../hacks/rest-library.js';
 
 export default class PasswordClient extends RestClient {
     constructor () {
@@ -6,11 +6,14 @@ export default class PasswordClient extends RestClient {
     }
 
     listPasswords(encryptionKey) {
-        // Returns a Promise with the response.
         return this.GET('/secrets', { encryptionKey });
     }
 
     getPassword(name, encryptionKey) {
         return this.GET('/secret', { name, encryptionKey });
+    }
+
+    putPassword(name, secret, encryptionKey) {
+        return this.PUT('/secret', { name, secret, encryptionKey }, {emptyBody: true});
     }
 };
