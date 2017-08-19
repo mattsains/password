@@ -126,5 +126,4 @@ describe('CRUD operations on passwords', () => {
                 expect(this.mockDb.list).toHaveBeenCalled();
             });
     }));
-
 });

@@ -11,7 +11,7 @@ module.exports = {
     },
     get: {
         query: {
-            key: Joi.string().required(),
+            key: Joi.string().uuid().required(),
             encryptionKey: Joi.string().required()
         }
     },
@@ -22,7 +22,7 @@ module.exports = {
     },
     delete: {
         query: {
-            key: Joi.string().required()
+            key: Joi.string().uuid().required()
         }
     }
 };
