@@ -6,7 +6,7 @@ class DecryptionError extends Error { };
 exports.DecryptionError = DecryptionError;
 
 exports.encrypt = (key, data) => {
-     return openpgp.encrypt({ data, passwords: [key], detached: true, armour: true })
+     return openpgp.encrypt({ data, passwords: [key], armour: true })
         .then(result => result.data)
 };
 

@@ -1,90 +1,47 @@
-const nosql = require('nosql');
 const uuid = require('uuid/v4');
-
-const Storage = require('./storage.js');
-const NoSuchEntity = Storage.NoSuchEntity;
-exports.NoSuchEntity = NoSuchEntity;
-
 const crypto = require('./crypto.js');
-exports.DecryptionError = crypto.DecryptionError;
 
-const secretIndex = nosql.load('./secretIndex.db.json');
+module.exports = class {
+    static get NoSuchEntity() { return class extends Error { } };
+    static get DecryptionError() { return crypto.DecryptionError };
 
-exports.put = (name, secret, encryptionKey) => {
-    // Hacky way to make sure this is a put
-    return removeIndexRecord(name)
-        .catch(err => {
-            if (!(err instanceof NoSuchEntity)) throw err;
+    constructor(db) {
+        this.db = db;
+    };
+
+    put(key, name, secret, encryptionKey) {
+        key = key || uuid();
+        return Promise.all([
+            crypto.encrypt(encryptionKey, name),
+            crypto.encrypt(encryptionKey, secret)
+        ]).then(results => {
+            return this.db.put(key, { encryptedName: results[0], encryptedSecret: results[1] });
+        }).then(() => key);
+    };
+
+    get(key, encryptionKey) {
+        return this.db.get(key)
+            .then(record => {
+                if (record == undefined) throw new NoSuchEntity();
+                else return record.encryptedSecret;
+            })
+            .then(data => crypto.decrypt(encryptionKey, data.toString()));
+    };
+
+    delete(key) {
+        return this.db.delete(key);
+    };
+
+    list(encryptionKey) {
+        return this.db.list().then(records => {
+            return Promise.all(records.map(record => crypto.decrypt(encryptionKey, record.encryptedName).then(secret => [record.key, secret])))
         })
-        .then(() => generateNewRecord(name, secret, encryptionKey))
-        .then(record => secretIndex.insert(record));
-};
-
-exports.get = (name, encryptionKey) => {
-    return getIndexRecord(name).then(indexRecord => {
-        if (indexRecord == undefined) throw new NoSuchEntity();
-        else return indexRecord.secret;
-    })
-    .then(data => crypto.decrypt(encryptionKey, data.toString()));
-};
-
-exports.delete = (name) => {
-    return getIndexRecord(name).then(record => {
-        if (record == undefined) throw new NoSuchEntity();
-        return removeIndexRecord(name);
-    });
-};
-
-exports.list = (encryptionKey) => {
-    return new Promise((resolve, reject) => {
-        secretIndex.find().make(filter => {
-            filter.callback((err, result) => {
-                if (err) reject(err);
-                resolve(result);
+        .then(entries => {
+            const obj = { };
+            entries.forEach(entry => {
+                obj[entry[0]] = entry[1];
             });
+            return obj;
         });
-    }).then(records => {
-        return Promise.all(records.map(record => crypto.decrypt(encryptionKey, record.encryptedName)));
-    });
-}
-
-RecordMatchesName = (name, record) => {
-    return name != undefined && crypto.hash(name, record.salt) === record.hashedName
+    };
 };
-
-generateNewRecord = (name, secret, encryptionKey) => {
-    const salt = uuid();
-    const hashedName = crypto.hash(name, salt);
-    return crypto.encrypt(encryptionKey, name)
-        .then(encryptedName => {
-            return crypto.encrypt(encryptionKey, secret)
-                .then(encryptedSecret => ({hashedName, salt, encryptedName, secret: encryptedSecret}));
-        })
-}
-
-getIndexRecord = name => {
-    return new Promise((resolve, reject) => {
-        secretIndex.find().make(filter => {
-            filter.callback((err, result) => {
-                if (err) reject(err);
-                resolve(result.find(rec => RecordMatchesName(name, rec)));
-            });
-        });
-    });
-};
-
-removeIndexRecord = name => {
-    return getIndexRecord(name).then(record => {
-        if (record == undefined) throw new NoSuchEntity();
-        return new Promise((resolve, reject) => {
-            secretIndex.remove().make(filter => {
-                filter.where('hashedName', record.hashedName);
-                filter.callback((err, result) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-            });
-        });
-    });
-};
-
