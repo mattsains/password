@@ -1,9 +1,12 @@
 const uuid = require('uuid/v4');
 const crypto = require('./crypto.js');
 
+class NoSuchEntity extends Error { };
+const DecryptionError = crypto.DecryptionError;
+
 module.exports = class {
-    static get NoSuchEntity() { return class extends Error { } };
-    static get DecryptionError() { return crypto.DecryptionError };
+    static get NoSuchEntity() { return NoSuchEntity };
+    static get DecryptionError() { return DecryptionError };
 
     constructor(db) {
         this.db = db;
@@ -22,10 +25,10 @@ module.exports = class {
     get(key, encryptionKey) {
         return this.db.get(key)
             .then(record => {
-                if (record == undefined) throw new NoSuchEntity();
+                if (record == undefined) throw new this.constructor.NoSuchEntity();
                 else return record.encryptedSecret;
             })
-            .then(data => crypto.decrypt(encryptionKey, data.toString()));
+            .then(data => crypto.decrypt(encryptionKey, data.toString()))
     };
 
     delete(key) {
