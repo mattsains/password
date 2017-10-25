@@ -9,8 +9,8 @@ export default class PasswordClient extends RestClient {
         return this.GET('/secrets', { encryptionKey });
     }
 
-    getPassword(name, encryptionKey) {
-        return this.GET('/secret', { name, encryptionKey });
+    getPassword(key, encryptionKey) {
+        return this.GET('/secret', { key, encryptionKey });
     }
 
     putPassword(name, secret, encryptionKey) {

@@ -38,7 +38,7 @@ export default class PasswordList extends Component {
         const passwordDetailDialog = (
             <PasswordDetailDialog
                 open={!!this.state.currentPassword}
-                name={this.state.currentPassword}
+                passwordKey={this.state.currentPassword}
                 encryptionKey={this.props.encryptionKey}
             />
         );
@@ -47,6 +47,10 @@ export default class PasswordList extends Component {
             <PasswordAddDialog
                 encryptionKey={this.props.encryptionKey}
                 open={this.state.isAddingPassword}
+                onDialogClose={() => {
+                    this.setState({ isAddingPassword: false });
+                    this.componentDidMount();
+                }}
             />
         );
 
@@ -68,8 +72,8 @@ export default class PasswordList extends Component {
         );
     }
 
-    handlePasswordSelection = passwordName => {
-        this.setState({currentPassword: passwordName});
+    handlePasswordSelection = passwordKey => {
+        this.setState({currentPassword: passwordKey});
     }
 
     handlePasswordDetailDone = () => {
@@ -77,14 +81,17 @@ export default class PasswordList extends Component {
     }
 
     renderListItems() {
-        return this.state.passwords.map(item => (
-            <span key={item}>
-            <ListItem
-                primaryText={item}
-                onTouchTap={() => this.handlePasswordSelection(item)}
-            />
-            <Divider inset={false}/>
-            </span>
-        ));
+        return Object.entries(this.state.passwords).map(entry => {
+            const [key, val] = entry;
+            return (
+                <span key={key}>
+                <ListItem
+                    primaryText={val}
+                    onTouchTap={() => this.handlePasswordSelection(key)}
+                />
+                <Divider inset={false}/>
+                </span>
+            );
+        });
     }
 }

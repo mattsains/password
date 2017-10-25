@@ -10,6 +10,7 @@ export default class PasswordDetailDialog extends Component {
         super(props);
         this.state = {
             loading: true,
+            name: undefined,
             password: undefined,
             open: false
         };
@@ -17,6 +18,7 @@ export default class PasswordDetailDialog extends Component {
 
     componentDidMount() {
         this.client = new PasswordClient();
+        this.componentWillReceiveProps(this.props);
     }
 
     componentWillReceiveProps(newProps) {
@@ -24,10 +26,14 @@ export default class PasswordDetailDialog extends Component {
             this.setState({ open: newProps.open });
             if (newProps.open == false && this.props.open == true) this.props.onDialogClose();
 
-            if (newProps.name && newProps.encryptionKey) {
-                this.client.getPassword(newProps.name, newProps.encryptionKey)
-                    .then(password => {
-                        this.setState({ password, loading: false })
+            if (newProps.passwordKey && newProps.encryptionKey) {
+                this.client.getPassword(newProps.passwordKey, newProps.encryptionKey)
+                    .then(entry => {
+                        this.setState({
+                            name: entry.name,
+                            password: entry.password,
+                            loading: false
+                        });
                     })
                     .catch(err => console.error(err));
             }
@@ -59,7 +65,7 @@ export default class PasswordDetailDialog extends Component {
 
         return (
             <Dialog
-                title={this.props.name}
+                title={this.state.name || this.props.name}
                 modal={false}
                 actions={actions}
                 open={this.state.open}
