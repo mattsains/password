@@ -1,19 +1,27 @@
 import React, { Component } from 'react';
-import RefreshIndicator from './hacks/BetterRefreshIndicator.js';
-import FlatButton from 'material-ui/FlatButton';
-import Dialog from 'material-ui/Dialog';
+import Button from 'material-ui/Button';
+import Dialog, { DialogTitle, DialogContent, DialogActions } from 'material-ui/Dialog';
 import TextField from 'material-ui/TextField';
-
+import { withStyles } from 'material-ui/styles';
+import { CircularProgress } from 'material-ui/Progress';
 import PasswordClient from './services/password-client.js';
 
-import style from './PasswordAddDialog.css';
+const styles = theme => ({
+    dialog: {
+        minWidth: '35vw',
+        minHeight: '20vh'
+    },
+    input: {
+        display: 'block'
+    }
+});
 
-export default class PasswordAddDialog extends Component {
+class PasswordAddDialog extends Component {
     constructor(props) {
         super(props);
         this.state = {
             loading: false,
-            open: false
+            open: true
         };
     }
 
@@ -21,55 +29,47 @@ export default class PasswordAddDialog extends Component {
         this.client = new PasswordClient();
     }
 
-    componentWillReceiveProps(newProps) {
-        if (newProps.open !== this.state.open) {
-            this.setState({ open: newProps.open });
-            if (newProps.open == false && this.props.open == true) this.props.onDialogClose();
-        }
-    }
-
     handleDialogClose = () => {
         this.setState({open: false, loading: false});
-        if (this.props.onDialogClose) this.props.onDialogClose();
+    }
+
+    notifyDialogClosed = () => {
+        if (this.props.onDialogClose) {
+            this.props.onDialogClose({
+                key: this.state.key,
+                name: this.state.name
+            });
+        }
     }
 
     savePassword = () => {
         this.setState({loading: true});
         this.client.putPassword(this.state.name, this.state.password, this.props.encryptionKey)
+            .then(key => this.setState({ key }))
             .then(() => this.handleDialogClose());
     }
 
     render() {
-        const actions = [
-            <FlatButton
-                label='Save'
-                primary={true}
-                onTouchTap={this.savePassword}
-            />,
-            <FlatButton
-                label='Cancel'
-                primary={false}
-                onTouchTap={this.handleDialogClose}
-            />
-        ];
+        const { classes } = this.props;
 
         let content;
         if (this.state.loading) {
             content = (
-                <RefreshIndicator size={40} className='refresh' status='loading' />
+                <CircularProgress size={40} className='refresh' status='loading' />
             );
         } else {
             content = (
                 <form>
                     <TextField
-                        onChange={(e, val) => this.setState({name: val})}
-                        hintText='Name'
-                        className='input-field'
+                        onChange={e => this.setState({name: e.target.value})}
+                        label='Name'
+                        className={classes.input}
+                        autoFocus
                     />
                     <TextField
-                        onChange={(e, val) => this.setState({password: val})}
-                        hintText='Password'
-                        className='input-field'
+                        onChange={e => this.setState({password: e.target.value})}
+                        label='Password'
+                        className={classes.input}
                     />
                 </form>
             );
@@ -78,13 +78,19 @@ export default class PasswordAddDialog extends Component {
         return (
             <Dialog
                 title={this.props.name}
-                modal={false}
-                actions={actions}
                 open={this.state.open}
                 onRequestClose={this.handleDialogClose}
+                onExited={this.notifyDialogClosed}
             >
-                {content}
+                <DialogTitle>{this.props.name}</DialogTitle>
+                <DialogContent>{content}</DialogContent>
+                <DialogActions>
+                <Button onTouchTap={this.handleDialogClose}>Cancel</Button>
+                <Button color='primary' onTouchTap={this.savePassword}>Save</Button>
+                </DialogActions>
             </Dialog>
         );
     }
 }
+
+export default withStyles(styles)(PasswordAddDialog);

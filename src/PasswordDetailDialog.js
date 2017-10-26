@@ -1,63 +1,53 @@
 import React, { Component } from 'react';
-import RefreshIndicator from './hacks/BetterRefreshIndicator.js';
-import FlatButton from 'material-ui/FlatButton';
-import Dialog from 'material-ui/Dialog';
+import Button from 'material-ui/Button';
+import Dialog, { DialogActions, DialogTitle, DialogContent } from 'material-ui/Dialog';
+import { CircularProgress } from 'material-ui/Progress'
+import { withStyles } from 'material-ui/styles';
 
 import PasswordClient from './services/password-client.js';
 
-export default class PasswordDetailDialog extends Component {
+const styles = theme => ({
+    dialog: {
+        minWidth: '25vw',
+        minHeight: '10vh'
+    }
+});
+
+class PasswordDetailDialog extends Component {
     constructor(props) {
         super(props);
         this.state = {
             loading: true,
             name: undefined,
             password: undefined,
-            open: false
+            open: true
         };
     }
 
     componentDidMount() {
         this.client = new PasswordClient();
-        this.componentWillReceiveProps(this.props);
+        this.client.getPassword(this.props.passwordKey, this.props.encryptionKey)
+        .then(entry => {
+            this.setState({
+                name: entry.name,
+                password: entry.password,
+                loading: false
+            });
+        })
+        .catch(err => console.error(err));
     }
 
-    componentWillReceiveProps(newProps) {
-        if (newProps !== this.state) {
-            this.setState({ open: newProps.open });
-            if (newProps.open == false && this.props.open == true) this.props.onDialogClose();
-
-            if (newProps.passwordKey && newProps.encryptionKey) {
-                this.client.getPassword(newProps.passwordKey, newProps.encryptionKey)
-                    .then(entry => {
-                        this.setState({
-                            name: entry.name,
-                            password: entry.password,
-                            loading: false
-                        });
-                    })
-                    .catch(err => console.error(err));
-            }
-        }
-    }
-
-    handleDialogClose = () => {
-        this.setState({open: false});
-        if (this.props.onDialogClose) this.props.onDialogClose();
+    handleDialogClose() {
+        this.setState({ open: false }); 
     }
 
     render() {
-        const actions = [
-            <FlatButton
-                label="Cancel"
-                primary={true}
-                onTouchTap={this.handleDialogClose}
-            />
-        ];
+        const { classes } = this.props;
 
         let content;
         if (this.state.loading) {
             content = (
-                <RefreshIndicator size={40} className='refresh' status='loading' />
+                <CircularProgress size={40} className='refresh' status='loading' />
             );
         } else {
             content = (<span>{this.state.password}</span>);
@@ -65,14 +55,18 @@ export default class PasswordDetailDialog extends Component {
 
         return (
             <Dialog
-                title={this.state.name || this.props.name}
-                modal={false}
-                actions={actions}
                 open={this.state.open}
-                onRequestClose={this.handleDialogClose}
+                onRequestClose={() => this.handleDialogClose()}
+                onExited={this.props.onDialogClose}
             >
-                {content}
+                <DialogTitle>{this.state.name || this.props.name}</DialogTitle>
+                <DialogContent className={classes.dialog}>{content}</DialogContent>
+                <DialogActions>
+                    <Button onTouchTap={() => this.handleDialogClose()}>Cancel</Button>
+                </DialogActions>
             </Dialog>
         );
     }
 }
+
+export default withStyles(styles)(PasswordDetailDialog);
