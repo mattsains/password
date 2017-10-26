@@ -17,8 +17,9 @@ import './App.css';
 
 import PasswordClient from './services/password-client.js';
 import PasswordList from './PasswordList.js';
-import PasswordAddDialog from './PasswordAddDialog.js'
-import PasswordDetailDialog from './PasswordDetailDialog.js'
+import PasswordAddDialog from './PasswordAddDialog.js';
+import PasswordDetailDialog from './PasswordDetailDialog.js';
+import LoginDialog from './LoginDialog.js';
 
 const muiTheme = createMuiTheme({
     palette: {
@@ -43,15 +44,11 @@ class App extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            isLoading: true,
+            isLoading: false,
             passwords: undefined,
-            encryptionKey: 'test'
+            encryptionKey: undefined
         };
         this.client = new PasswordClient();
-    }
-
-    componentWillMount() {
-        this.loadPasswords();
     }
 
     loadPasswords() {
@@ -89,6 +86,12 @@ class App extends Component {
             />
         );
 
+        const handleLoginDialogClose = encryptionKey => {
+            this.setState({encryptionKey}, () => {
+                this.loadPasswords()
+            });
+        }
+
         return (
             <MuiThemeProvider theme={muiTheme}>
                 <BrowserRouter>
@@ -101,10 +104,10 @@ class App extends Component {
                             {this.state.isLoading ? <LinearProgress color='accent' style={{height:3}} /> : false}
                         </AppBar>
                         <section className={classes.content}>
-                            <PasswordList 
+                            { this.state.encryptionKey ? <PasswordList
                                 isLoading={this.state.isLoading}
                                 passwords={this.state.passwords} 
-                            />
+                            /> : <LoginDialog onDialogClose={handleLoginDialogClose} /> }
                         </section>
                         <Link to='/password/add' className={classes.addLink}>
                             <Button fab color='primary' className={classes.addButton}><Add /></Button>
