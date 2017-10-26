@@ -22,13 +22,22 @@ module.exports = class {
         }).then(() => key);
     };
 
-    get(key, encryptionKey) {
+    getSecret(key, encryptionKey) {
         return this.db.get(key)
             .then(record => {
                 if (record == undefined) throw new this.constructor.NoSuchEntity();
                 else return record.encryptedSecret;
             })
             .then(data => crypto.decrypt(encryptionKey, data.toString()))
+    };
+
+    getName(key, encryptionKey) {
+        return this.db.get(key)
+        .then(record => {
+            if (record == undefined) throw new this.constructor.NoSuchEntity();
+            else return record.encryptedName;
+        })
+        .then(data => crypto.decrypt(encryptionKey, data.toString()))
     };
 
     delete(key) {

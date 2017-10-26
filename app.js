@@ -37,19 +37,25 @@ app.put('/secret', validation(requestFormat.put), (req, res, next) => {
         .catch(next);
 });
 
-app.get('/secret',  validation(requestFormat.get), (req, res, next) => {
-    return secretStorage.get(req.query.key, req.query.encryptionKey)
-        .then(secret => res.json(secret))
+app.get('/secret', validation(requestFormat.get), (req, res, next) => {
+    return Promise.all([
+        secretStorage.getName(req.query.key, req.query.encryptionKey),
+        secretStorage.getSecret(req.query.key, req.query.encryptionKey)
+    ])
+        .then(entry => res.json({
+            name: entry[0],
+            password: entry[1]
+        }))
         .catch(next);
 });
 
-app.delete('/secret',  validation(requestFormat.delete), (req, res, next) => {
+app.delete('/secret', validation(requestFormat.delete), (req, res, next) => {
     secretStorage.delete(req.query.key)
         .then(() => res.end())
         .catch(next);
 });
 
-app.get('/secrets',  validation(requestFormat.list), (req, res, next) => {
+app.get('/secrets', validation(requestFormat.list), (req, res, next) => {
     secretStorage.list(req.query.encryptionKey)
         .then(result => res.json(result))
         .catch(next);
